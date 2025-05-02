@@ -1,38 +1,35 @@
-from base_tokenizer import BaseTokenizer
 import regex as re
+from collections import defaultdict
+from base_tokenizer import BaseTokenizer
 
 class DynamicBpe(BaseTokenizer):
-    """
-    Dynamic BPE tokenizer using dynamic programming to obtain the longest token.
-    """
     def __init__(self, pattern=None):
         super().__init__()
-        self.vocab = None
-        self.merges = None
+        self.vocab = set()
+        self.merges = {}
         self.pattern = re.compile(pattern) if pattern else None
 
     def train(self, corpus, vocab_size):
         words = corpus.split()
-        vocab = set(" ".join(words))
+        self.vocab = set(" ".join(words))
         merges = {}
 
-        while len(vocab) < vocab_size:
-            pairs = {}
+        while len(self.vocab) < vocab_size:
+            pairs = defaultdict(int)
             for word in words:
                 for i in range(len(word) - 1):
                     pair = (word[i], word[i + 1])
-                    pairs[pair] = pairs.get(pair, 0) + 1
+                    pairs[pair] += 1
+
             if not pairs:
                 break
 
             best_pair = max(pairs, key=pairs.get)
             new_token = "".join(best_pair)
-            vocab.add(new_token)
+            self.vocab.add(new_token)
             merges[best_pair] = new_token
+            words = [word.replace("".join(best_pair), new_token) for word in words]
 
-            words = [word.replace(best_pair[0] + best_pair[1], new_token) for word in words]
-
-        self.vocab = vocab
         self.merges = merges
 
     def encode(self, text):
@@ -40,7 +37,7 @@ class DynamicBpe(BaseTokenizer):
             words = self.pattern.findall(text)
         else:
             words = text.split()
-        
+
         encoded_tokens = []
         for word in words:
             dp = [None] * (len(word) + 1)
@@ -54,7 +51,6 @@ class DynamicBpe(BaseTokenizer):
                             dp[i] = candidate
             encoded_tokens.extend(dp[-1] if dp[-1] else [word])
         return encoded_tokens
-    
+
     def decode(self, tokens):
         return "".join(tokens)
-

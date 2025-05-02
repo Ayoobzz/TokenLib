@@ -2,9 +2,6 @@ import regex as re
 from base_tokenizer import BaseTokenizer
 
 class NaiveBpe(BaseTokenizer):
-    """
-    Naive implementation of Byte Pair Encoding (BPE) tokenizer.
-    """
     def __init__(self, pattern=None):
         super().__init__()
         self.vocab = None
@@ -20,6 +17,7 @@ class NaiveBpe(BaseTokenizer):
         if self.pattern:
             text_chunks = re.findall(self.pattern, corpus)
             tokens = [list(chunk.encode("utf-8")) for chunk in text_chunks]
+            tokens = [item for sublist in tokens for item in sublist]
         else:
             tokens = list(corpus.encode("utf-8"))
 
@@ -37,7 +35,7 @@ class NaiveBpe(BaseTokenizer):
         self.merges = merges
         self.vocab = vocab
 
-    def encode(self, text):
+    def tokenize(self, text):
         if self.pattern:
             text_chunks = re.findall(self.pattern, text)
             tokens = [list(chunk.encode("utf-8")) for chunk in text_chunks]
@@ -60,31 +58,20 @@ class NaiveBpe(BaseTokenizer):
         return my_bytes.decode("utf-8", errors="replace")
 
 
-
-
 def stats(tokens):
- 
     counts = {}
-
-    if isinstance(tokens[0], list):
-         for token_list in tokens:
-            for pair in zip(token_list, token_list[1:]):
-                counts[pair] = counts.get(pair, 0) + 1
-    else:
-         for pair in zip(tokens, tokens[1:]):
-            counts[pair] = counts.get(pair, 0) + 1
-
+    for pair in zip(tokens, tokens[1:]):
+        counts[pair] = counts.get(pair, 0) + 1
     return counts
 
-
-def merge(text, pair, rep):
+def merge(tokens, pair, rep):
     i = 0
     new_text = []
-    while i < len(text):
-        if i < len(text) - 1 and text[i] == pair[0] and text[i + 1] == pair[1]:
+    while i < len(tokens):
+        if i < len(tokens) - 1 and tokens[i] == pair[0] and tokens[i + 1] == pair[1]:
             new_text.append(rep)
             i += 2
         else:
-            new_text.append(text[i])
+            new_text.append(tokens[i])
             i += 1
     return new_text
