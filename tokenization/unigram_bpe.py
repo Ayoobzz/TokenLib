@@ -40,7 +40,7 @@ class UnigramBPETokenizer(BaseTokenizer):
                 break
 
             log_probs = {sw: math.log(freq / total_words) for sw, freq in subword_freq.items()}
-            losses = {sw: subword_freq[sw] * log_probs[sw] for sw in self.vocab if sw in log_probs}
+            losses = {sw: -subword_freq[sw] * log_probs[sw] for sw in self.vocab if sw in log_probs}
 
             if not losses:
                 break
